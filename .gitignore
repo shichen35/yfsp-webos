@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# build output
+app/dist/
+dist/
+*.ipk
+out/
+
+# vite cache
+**/.vite/
+.vite/
+
+# logs
+*.log
+npm-debug.log*
+
+# env / secrets (Dev Mode passphrase, TV host, SSH keys — never commit)
+.env
+.env.*
+*.pem
+tv-key*
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# feasibility scripts, removed after M1 (D11)
+mvp/
