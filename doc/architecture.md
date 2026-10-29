@@ -29,12 +29,12 @@ app/
     pages/       首页、分类、搜索、详情、收藏、历史、设置（排行页视决策 D3）
     player/      播放器
     styles/
+  scripts/       smoke.mjs：不经界面走通列表、详情、取址、经代理拉分片
   webos-meta/    appinfo.json 和图标，打包时合并进构建产物
 service/com.yfsp.app.service/
                  Luna 服务：接口转发 + 本地媒体代理（代理也能在开发机上单独运行）
 build.sh         构建并打包 .ipk
 doc/             文档；doc/research/ 是调研记录
-mvp/             可行性验证脚本，M1 完成后删除
 ```
 
 应用 id 是 `com.yfsp.app`，服务 id 必须以应用 id 为前缀，所以是 `com.yfsp.app.service`。
@@ -163,7 +163,7 @@ Stream：`{ url, type: 'hls', label }`。`url` 是未经代理的 m3u8，播放�
 
 yfsp 没有载荷加密，响应是明文 JSON，这一节比 olevod 简单很多。
 
-签名（`yfspSign.js`，从站点主包 `uriSignature()` 整理，`mvp/sign-check.mjs` 用 10 个浏览器真实请求验证过）：
+签名（`yfspSign.js`，从站点主包 `uriSignature()` 整理，10 个浏览器真实请求收作 `yfspSign.test.js` 的测试向量）：
 
 ```text
 canonical(qs): 按 & 拆开，值 decodeURIComponent，"+" 换成空格，按原顺序拼回
@@ -368,7 +368,7 @@ sequenceDiagram
 ### 开发中验证的问题
 
 - Q1：`list/Search` 的 `orderby` 0 和 1 是否分别是添加时间和更新时间。已关闭（M1-6）：电视剧频道 `orderby=0` 的前 5 条 `addTime` 严格递减（10 月 28 日到 26 日），`orderby=1` 的前 5 条加入时间分散在 9 月到 10 月、都是正在更新的剧，确认 0 是添加时间、1 是更新时间。
-- Q2：已关闭。剧集 key 配 `a=0` 在脚本里能取到指定剧集的地址并播放（见 `mvp/README.md`）。
+- Q2：已关闭。剧集 key 配 `a=0` 在脚本里能取到指定剧集的地址并播放（M1-5 的 `yfsp.test.js` 和 `app/scripts/smoke.mjs` 都走这条路）。
 - Q3：webOS 模拟器里的应用能否访问宿主机 `127.0.0.1:7654`。
 - Q4：真机 webview 从 `file://` 直连接口能否成功（决定 Luna 失败时退直连有没有用；olevod 的经验是不通），Luna 转发和代理在 Node 16 上是否正常，界面在 Chromium 108 上是否正常。在 M3 之后的检查点验证，发布前真机再确认一次。
 - Q5：分片 `verify` 的确切有效期，决定长时间暂停后的恢复体验。

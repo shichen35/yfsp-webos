@@ -30,7 +30,6 @@
 | [接口调研](doc/research/api.md) | 域名、签名算法、接口清单和字段 |
 | [视频源调研](doc/research/video-source.md) | 播放地址、m3u8 与分片、CDN 校验规则、为什么需要本地代理 |
 | [olevod 复用地图](doc/research/olevod-reuse.md) | 参考实现里哪些文件能直接用、哪些要改 |
-| [可行性验证](mvp/README.md) | 不经浏览器走通「列表、取址、拉分片」的脚本和本地代理播放验证 |
 
 ## 许可证
 

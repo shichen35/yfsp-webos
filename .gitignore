@@ -27,6 +27,3 @@ tv-key*
 *.swp
 .idea/
 .vscode/
-
-# feasibility scripts, removed after M1 (D11)
-mvp/
