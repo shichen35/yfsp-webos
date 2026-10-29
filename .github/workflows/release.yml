@@ -1,0 +1,42 @@
+name: Release
+
+# Pushing a tag like v1.0.2 builds the .ipk and publishes it as a GitHub
+# Release of this repo. The version comes from the tag; nothing is written back
+# to the source tree. A tag with a pre-release suffix (v1.1.0-beta.1) is marked
+# as a pre-release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+        working-directory: app
+
+      - name: Build and package
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: VERSION="${VERSION#v}" bash build.sh
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.ipk out/*.manifest.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            ${{ contains(github.ref_name, '-') && '--prerelease' || '' }}
