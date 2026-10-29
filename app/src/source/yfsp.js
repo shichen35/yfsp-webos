@@ -147,7 +147,8 @@ const SHELF_KEYS = {
 export async function homeShelves() {
   const [d] = await apiGet(HOST.m10, '/v3/home/getAllVideo', { cinema: 1, set: 1, size: 13, isTopic: 1, cacheable: 1 })
   const byChannel = {}
-  for (const [k, id] of Object.entries(SHELF_KEYS)) byChannel[id] = (d?.[k] || []).map(summary)
+  // A shelf row holds at most 12 cards; the gateway sends 13 whatever `size` says.
+  for (const [k, id] of Object.entries(SHELF_KEYS)) byChannel[id] = (d?.[k] || []).slice(0, 12).map(summary)
   return CATEGORIES.filter((c) => byChannel[c.id]?.length).map((c) => ({
     key: c.id, title: c.name, categoryId: c.id, items: byChannel[c.id],
   }))

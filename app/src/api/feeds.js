@@ -5,13 +5,14 @@
  * The cache keys live only here: pages load, page and invalidate a feed by its
  * own arguments and never see a key.
  */
-import { categoryList, homeBanners, homeShelves, detail, isChallenged } from '../source/index.js'
+import { categoryList, homeBanners, homeShelves, rankList, detail, isChallenged } from '../source/index.js'
 import { CATEGORIES, getCategory } from '../config/taxonomy.js'
 import { DEFAULT_FILTER } from '../store/filters.js'
 import * as pageCache from '../store/pageCache.js'
 
 const HOME_SHELVES_KEY = 'home:shelves'
 const HOME_BANNERS_KEY = 'home:banners'
+const HOME_RANK_KEY = 'home:rank'
 
 // The home page's featured row. Failure is not an error state: the page simply
 // opens on its shelves instead (homeBanners never throws).
@@ -24,13 +25,33 @@ export function loadHomeShelves() {
   return pageCache.loadOnce(HOME_SHELVES_KEY, homeShelves)
 }
 
+// The home page's 热播榜 shelf: the week charts of every channel that has
+// one, interleaved (movie #1, drama #1, ... movie #2, ...), deduped, 12 cards.
+export function loadHomeRank() {
+  return pageCache.loadOnce(HOME_RANK_KEY, async () => {
+    const charts = Object.values(await rankList()).map((r) => r.week)
+    const seen = new Set()
+    const items = []
+    for (let i = 0; items.length < 12 && charts.some((c) => i < c.length); i++) {
+      for (const c of charts) {
+        const it = c[i]
+        if (it && !seen.has(it.id) && items.length < 12) {
+          seen.add(it.id)
+          items.push(it)
+        }
+      }
+    }
+    return items
+  })
+}
+
 // One title's detail (metadata + episode list). The detail page loads it and
 // the player opened from it reads the same entry, so playback never refetches.
 export function loadDetail(id) {
   return pageCache.loadOnce(`detail:${id}`, () => detail(id))
 }
 
-// Refresh / retry: forget the home feed (shelves and banners) so the page's
+// Refresh / retry: forget the home feed (shelves, chart and banners) so the page's
 // next load refetches.
 export function invalidateHome() {
   pageCache.invalidate('home:')
@@ -66,7 +87,7 @@ export function invalidateCategory(category) {
  */
 export async function prefetchAll(shouldStop = () => false) {
   const stop = () => shouldStop() || isChallenged()
-  const loaders = [loadHomeShelves, loadHomeBanners, ...CATEGORIES.map((c) => () => loadCategoryPage(c.id, DEFAULT_FILTER))]
+  const loaders = [loadHomeShelves, loadHomeBanners, loadHomeRank, ...CATEGORIES.map((c) => () => loadCategoryPage(c.id, DEFAULT_FILTER))]
   for (const load of loaders) {
     if (stop()) return
     try {
