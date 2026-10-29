@@ -52,11 +52,6 @@ export const SORTS = [
 ]
 export const DEFAULT_SORT = '1'
 
-// Kept only until FilterPanel / FilterBar stop referencing them (M2-4); the
-// site has no initial-letter filter.
-export const LETTERS = [{ value: '0', label: '全部' }]
-export const DEFAULT_LETTER = '0'
-
 // Display order follows the site's channel menu. `cid` is the channel path
 // list/Search takes when no genre is picked. Panels follow GetSearchCondition's
 // per-channel order minus 画质; 体育 isn't in it and gets the common three.

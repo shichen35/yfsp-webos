@@ -1,6 +1,7 @@
 /*
- * Region / Year / initial-letter filter panel, opened by the
- * category page's 额外筛选 button (sort lives on the filter bar itself). A fixed opaque panel on the right on its own "filter" focus layer —
+ * The category's extra filters (地区 / 语言 / 年份, plus 状态 or 形式 where
+ * the channel has them — taxonomy's `panelFilters`), opened by the category
+ * page's 额外筛选 button (sort lives on the filter bar itself). A fixed opaque panel on the right on its own "filter" focus layer —
  * no slide-in animation, no scrim over the content behind it (focus is on the
  * panel, so the grid underneath can't receive input anyway).
  *
@@ -27,7 +28,7 @@ import {
   setFocus,
   getCurrentFocus,
 } from '../hooks/useFocus.js'
-import { getCategory, LETTERS, DEFAULT_LETTER } from '../config/taxonomy.js'
+import { getCategory } from '../config/taxonomy.js'
 import { useFilter, patchFilter, resetFilter } from '../store/filters.js'
 
 const LAYER = 'filter'
@@ -39,10 +40,8 @@ const ROW_TOL = 8
 
 // Section index doubles as the focusable's `row` so ids stay unique; the value
 // is irrelevant to navigation (that's geometric) — only ordering the ids is.
-const AREA_ROW = 0
-const YEAR_ROW = 1
-const LETTER_ROW = 2
-const ACTION_ROW = 3
+// The header's Reset/Done take a row past every section.
+const ACTION_ROW = 99
 
 // The chips of the wrapped row immediately above/below `cr` (`vdir` 'up'/'down'),
 // or [] if `cr` is already on the edge row. "Nearest row" = the closest top edge
@@ -143,11 +142,11 @@ function OptChip({ row, col, label, selected, className = '', onSelect }) {
   )
 }
 
-function Group({ title, options, value, row, cols, onPick }) {
+function Group({ title, options, value, row, onPick }) {
   return (
     <div className="mb-8">
       <div className="mb-3 text-caption text-fg-2">{title}</div>
-      <div className={`grid gap-3 ${cols}`}>
+      <div className="grid grid-cols-4 gap-3">
         {options.map((o, i) => (
           <OptChip
             key={o.value}
@@ -155,7 +154,6 @@ function Group({ title, options, value, row, cols, onPick }) {
             col={i}
             label={o.label}
             selected={value === o.value}
-            className={options === LETTERS && o.value === DEFAULT_LETTER ? 'col-span-2' : ''}
             onSelect={() => onPick(o.value)}
           />
         ))}
@@ -174,7 +172,7 @@ export default function FilterPanel({ category, onClose }) {
   // the engine's onSelect.
   useFocusFrame({
     layer: LAYER,
-    focus: `${LAYER}/${GROUP}-${AREA_ROW}-0`,
+    focus: `${LAYER}/${GROUP}-0-0`,
     onBack: onClose,
     onKey: (e) => {
       const dir = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[e.key]
@@ -206,9 +204,9 @@ export default function FilterPanel({ category, onClose }) {
           </span>
         </div>
       </div>
-      <Group title="地区" options={cfg.areas} value={filter.area} row={AREA_ROW} cols="grid-cols-4" onPick={(v) => patchFilter(category, { area: v })} />
-      <Group title="年份" options={cfg.years} value={filter.year} row={YEAR_ROW} cols="grid-cols-4" onPick={(v) => patchFilter(category, { year: v })} />
-      <Group title="首字母" options={LETTERS} value={filter.letter} row={LETTER_ROW} cols="grid-cols-8" onPick={(v) => patchFilter(category, { letter: v })} />
+      {cfg.panelFilters.map((d, i) => (
+        <Group key={d.key} title={d.title} options={d.options} value={filter[d.key]} row={i} onPick={(v) => patchFilter(category, { [d.key]: v })} />
+      ))}
     </div>
   )
 }

@@ -1,8 +1,8 @@
 /*
  * Category page header (focus rows 0-1 of the content group): row 0 is a
  * horizontally scrollable strip of subtype chips (All + taxonomy genres);
- * row 1 is its own line with the three sort chips (最新 / 最热 / 评分), the
- * 额外筛选 button that opens the region/year/letter panel, and a
+ * row 1 is its own line with the sort chips (最近更新 / 最新上线 / 最热 / 评分), the
+ * 额外筛选 button that opens the panel of the channel's other dimensions, and a
  * non-focusable summary of what that panel currently has set.
  *
  * Selecting a chip applies immediately (server-side filtering in CategoryPage).
@@ -10,7 +10,7 @@
 import { memo } from 'react'
 import { useFocusable } from '../hooks/useFocus.js'
 import { IconLabel } from './Icon.jsx'
-import { getCategory, SORTS, DEFAULT_LETTER } from '../config/taxonomy.js'
+import { getCategory, SORTS } from '../config/taxonomy.js'
 
 function Chip({ group, row = 0, col, icon, label, selected, onSelect }) {
   const { props } = useFocusable({ layer: 'home', group, row, col, onSelect })
@@ -26,12 +26,13 @@ function Chip({ group, row = 0, col, icon, label, selected, onSelect }) {
   )
 }
 
+// The panel's non-default picks, in panel order. Each dimension's first option
+// is its "All".
 function summaryText(cfg, filter) {
-  const parts = []
-  if (filter.area && filter.area !== '0') parts.push(filter.area)
-  if (filter.year && filter.year !== '0') parts.push(filter.year)
-  if (filter.letter && filter.letter !== DEFAULT_LETTER) parts.push(`首字母 ${filter.letter}`)
-  return parts.join(' · ')
+  return cfg.panelFilters
+    .map((d) => (filter[d.key] !== d.options[0].value ? d.options.find((o) => o.value === filter[d.key])?.label : null))
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function FilterBar({ category, group = 'content', filter, onSelectGenre, onSelectSort, onOpenFilter }) {
