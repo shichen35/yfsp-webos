@@ -13,7 +13,7 @@
  * The player is the one lazy() page: its chunk (and hls.js) must stay out of
  * the startup bundle, and it genuinely unmounts on back so playback stops.
  */
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import {
   initFocusEngine,
   focusTo,
@@ -38,6 +38,10 @@ import { settingsStore, getSetting } from './store/settings.js'
 import { useStoreValue } from './hooks/useStore.js'
 import { prefetchAll } from './api/feeds.js'
 import { exitApp } from './api/luna.js'
+
+// Lazy: the player chunk (and hls.js inside it) loads on first playback, never
+// at startup.
+const PlayerPage = lazy(() => import('./player/PlayerPage.jsx'))
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -78,8 +82,13 @@ export default function App() {
   const vis = (type) => ({ display: top.type === type ? 'block' : 'none' })
 
   const openDetail = useCallback((id) => setStack((s) => [...s, { type: 'detail', id }]), [])
-  // Player arrives in M3-2.
-  const openPlayer = useCallback(() => {}, [])
+  // Ignore a second OK while the player frame is already on top (the lazy chunk
+  // takes a beat to mount, during which the detail button can still fire).
+  const openPlayer = useCallback(
+    (payload) =>
+      setStack((s) => (s[s.length - 1].type === 'player' ? s : [...s, { type: 'player', ...payload }])),
+    [],
+  )
 
   const openFilterFor = useCallback((category) => setFilterPanel({ open: true, category }), [])
   const closeFilter = useCallback(() => setFilterPanel({ open: false, category: null }), [])
@@ -209,6 +218,18 @@ export default function App() {
           onPlay={(episodeIndex) => openPlayer({ id: stack.find((f) => f.type === 'detail').id, episodeIndex })}
           style={vis('detail')}
         />
+      )}
+
+      {top.type === 'player' && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 bg-black">
+              <div className="absolute inset-0 flex items-center justify-center bg-black text-heading text-fg">加载中…</div>
+            </div>
+          }
+        >
+          <PlayerPage id={top.id} episodeIndex={top.episodeIndex} />
+        </Suspense>
       )}
     </>
   )
