@@ -1,0 +1,246 @@
+/*
+ * Tailwind CSS v4 entry — the only stylesheet main.jsx imports.
+ *
+ * The design system lives in @theme (colors, type scale, layout tokens);
+ * pages compose utility classes in JSX. Shared cross-page patterns are the
+ * custom utilities below (`focusable`, `chip`, `tile-btn`, `glass-strong`, …) and the
+ * `focused:` variant, which mirrors the imperative `.focused` class the focus
+ * engine toggles (useFocus.js) — no React re-render on focus moves.
+ *
+ * Hard constraints baked in here (see doc/README.md "Hard Constraints"):
+ *   - All colors are opaque hex. No rgba(), no opacity layering, no gradients.
+ *   - No shadows, no blur, no translucency. A "dimmed" look is achieved with a
+ *     darker opaque surface token, never with alpha.
+ *   - Single sanctioned exception: the glass-strong material, a translucent
+ *     fill with no backdrop blur, reserved for the player chrome over video.
+ *     Every other surface is opaque bg-elev with a border-elev-2 rim: the tab
+ *     bar's capsule and buttons, dialogs, side sheets and the settings group
+ *     (a 0.85 fill over the dark page read the same as elev anyway).
+ *   - No motion of any kind: the transition/animation ban is enforced in the
+ *     base layer with !important. Focus border/color swaps are instant. Three
+ *     sanctioned exceptions, all in JS (this CSS ban governs only CSS-declared
+ *     motion, not WAAPI or scroll behavior): (1) the white focus fill in the tab
+ *     bar's capsule slides between cells as the D-pad cursor moves
+ *     (hooks/useSlidingCursor.js, via the Web Animations API) — a single
+ *     compositor-cheap node, no cell repaint; (2) the tab bar's round icon
+ *     buttons grow from a circle into icon + label on focus and shrink back
+ *     when it leaves (components/TabBar.jsx, WAAPI on the width and the label's
+ *     opacity, 140ms). The label rests at opacity-0 (hidden, never
+ *     translucent), like the sliding pill's opacity-0 while focus is off the
+ *     bar. In the right-aligned trailing group the neighbours shift
+ *     left while one button is expanded — accepted, Google TV's top bar does
+ *     the same; (3) focus moves smooth-scroll the target's scroll containers
+ *     into view (useFocus.js). All three leave the focus engine untouched.
+ *   - TV target is Chromium 108 (webOS 24): never use opacity modifiers like
+ *     bg-x/50 (they compile to color-mix(), Chrome 111+) — every color an
+ *     element needs must be its own token here.
+ * Sizes are real 1920x1080 px (no logical stage + scale).
+ */
+@import "tailwindcss";
+
+@theme {
+  /* Wipe the default palette: every color must come from this design system
+     (also guarantees no oklch() from stock colors reaches the TV). */
+  --color-*: initial;
+
+  /* Surfaces (opaque, darkest -> lightest elevation) */
+  --color-bg: #090b21;      /* global background */
+  --color-elev: #101227;    /* panels / poster placeholders */
+  --color-elev-2: #1c1d2f;  /* unfocused button / chip background */
+
+  /* Text (three fixed grayscale tiers, no white-with-opacity) */
+  --color-fg: #f5f5f7;      /* primary */
+  --color-fg-2: #9d9da3;    /* secondary */
+  --color-fg-3: #82828a;    /* tertiary / disabled; ~5:1 on bg, 4.45:1 on elev, so 22px meta stays legible */
+
+  /* Accents (used sparingly, never as a background wash) */
+  --color-accent: #00c0ff;  /* progress bars / ratings / selection indicator */
+  --color-uhd: #ffcf6b;     /* "UHD" badge / destructive dialog action */
+
+  /* Focus */
+  --color-focus: #00c0ff;   /* focus border / fill (site accent) */
+  --color-inverse: #090b21; /* text on a focused (filled) button/chip */
+
+  /* Glass material (the one sanctioned alpha exception) */
+  --color-glass-strong: rgba(24, 24, 30, 0.85); /* player chrome over video */
+  --color-glass-edge: rgba(255, 255, 255, 0.14);   /* hairline highlight rim */
+  --color-glass-active: rgba(255, 255, 255, 0.12); /* selected pill (unfocused) */
+
+  /* Player surface + switch knob still need plain black/white */
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* Settings switch track (off) on a focused, white row */
+  --color-track-focus: #c9c9ce;
+
+
+  /* Type scale (actual 1080p px, minimum 22px for 10-foot legibility).
+     Defaults are wiped so no stock size can slip under the minimum. */
+  --text-*: initial;
+  --text-display: 60px;
+  --text-title: 45px;
+  --text-heading: 32px;
+  --text-body: 26px;
+  --text-label: 24px;
+  --text-caption: 22px;
+
+  --font-sans: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei",
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Layout / safe area (the numeric spacing scale stays: 1 unit = 4px) */
+  --spacing-safe: 84px;         /* left/right safe margin */
+  --spacing-content-top: 92px;  /* content start offset (tab bar + 8px) */
+  /* Vertical breathing room a focus scroll keeps between the focused element and
+     the top/bottom edge of its scroll container. Exceeds the tab bar height (84px)
+     so a focused card can never come to rest under the bar; applied as
+     scroll-padding on the scrollers, see the [data-focus-id] rule below. */
+  --spacing-focus-safe: 120px;
+  --spacing-content-bottom: 60px;
+  /* Poster lists fill the full content width symmetrically: 6 cards per row
+     (must match COLS in CategoryPage/CardGrid), fixed gutter, card width
+     derived so 6 cards + 5 gaps = 1920 - 2*safe exactly. */
+  --spacing-gutter: 20px;
+  --spacing-card: calc((1920px - 2 * var(--spacing-safe) - 5 * var(--spacing-gutter)) / 6);
+  /* Blocks sized in whole columns, so their edges land on the card grid:
+     span-3 = three columns (866), a centered form block; sheet = two columns +
+     a gutter + the right safe margin, a side sheet whose left edge is column 5's. */
+  --spacing-span-3: calc(3 * var(--spacing-card) + 2 * var(--spacing-gutter));
+  --spacing-sheet: calc(2 * var(--spacing-card) + var(--spacing-gutter) + var(--spacing-safe));
+
+  /* Radius roles (media keeps rounded-xl 12, its focus frame 15; pills are
+     rounded-full; badges rounded-sm): tile = buttons, keys, inputs, episode
+     cells, list rows; surface = dialogs, panels, grouped lists, player chrome. */
+  --radius-tile: 14px;
+  --radius-surface: 20px;
+}
+
+/*
+ * `focused:` variant — styles that apply while the focus engine has marked
+ * this element (or an ancestor, e.g. a card wrapping its title) as focused.
+ */
+@custom-variant focused (&:where(.focused, .focused *));
+
+/*
+ * Focusable chrome: reserves an invisible border slot so focusing never
+ * shifts layout, and inverts to the solid white fill / dark text instantly.
+ * &.focused (0,2,0) outranks single utilities, so focus wins over selected
+ * looks like text-accent or bg-elev-2.
+ */
+@utility focusable {
+  border: 3px solid transparent;
+  &.focused {
+    background: var(--color-focus);
+    border-color: var(--color-focus);
+    color: var(--color-inverse);
+  }
+}
+
+/* Shared control shapes. A chip is a pill option or action inside a strip or a
+   control row (54px tall with focusable's border); a tile button is a 72px
+   standalone button (primary: add bg-accent text-inverse, secondary: bg-elev-2
+   text-fg — retry is always secondary). Pair both with `focusable`. */
+@utility chip {
+  @apply shrink-0 rounded-full bg-elev-2 px-[22px] py-2 text-label;
+}
+@utility tile-btn {
+  @apply inline-flex h-[72px] items-center justify-center rounded-tile px-8 text-label;
+}
+
+/* Glass material: a translucent fill, deliberately without backdrop-filter.
+   A backdrop blur is its own render pass that re-reads and re-blurs whatever
+   sits behind it on every frame that content moves (video under the player
+   chrome); a plain alpha fill is one blended quad. The
+   0.85 alpha keeps text on top legible with the content behind left sharp.
+   Border/radius stay per-site (`border border-glass-edge`, …). */
+@utility glass-strong {
+  background: var(--color-glass-strong);
+}
+
+/*
+ * Sanctioned motion exceptions live in JS, not here (all three are listed in
+ * the header; this note covers the sliding pill — the icon buttons' growth is
+ * in components/TabBar.jsx, the smooth focus scroll in useFocus.js). The tab
+ * bar's white focus fill is one pill that slides between cells as the D-pad
+ * cursor moves
+ * (hooks/useSlidingCursor.js, via the Web Animations API).
+ * WAAPI is used deliberately — it runs independently of the `transition/
+ * animation: none !important` ban above (which only governs CSS-declared
+ * motion), so no cascade-layer fight is needed. The motion is one transform-only
+ * (translateX + scaleX) animation on a single absolutely-positioned node, so
+ * it runs on the compositor; cells never repaint
+ * and the focus engine is untouched. The look at rest is identical to the
+ * pre-animation solid white fill — only the cursor now glides.
+ */
+
+/* Cards: skip layout/paint work for off-screen entries. */
+@utility cv-auto {
+  content-visibility: auto; /* already implies layout/style/paint containment */
+}
+
+@layer base {
+  /* No scrollbars anywhere. Every scroller in this app is driven by the focus
+     engine, never by a pointer, so a track is dead pixels — and on the TV it
+     showed up as a bright strip down the right edge of the home screen. Both
+     spellings are needed: Chromium 108 (the TV) only understands the WebKit
+     pseudo-element; `scrollbar-width` covers newer engines in the browser. */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Global ban guard: no motion of any kind, anywhere. */
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  html,
+  body {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden; /* the 1080p frame never scrolls as a whole */
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-body);
+    line-height: 1.35;
+    /* No text smoothing tricks; keep it cheap for the weak TV GPU. */
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+
+  button {
+    cursor: default;
+  }
+
+  /* A focused element must never sit flush against the screen/container edge.
+     The two axes are kept in DIFFERENT places on purpose:
+       - inline (left/right) rides on the element as scroll-margin. Its scroller
+         is the element's own horizontal strip — the innermost one — so nothing
+         can clip this away (useFocus.js mirrors it as STRIP_SAFE).
+       - block (top/bottom) lives on the SCROLL CONTAINERS as scroll-padding
+         (scroll-py-focus-safe on .tab-content, DetailPage's .overlay and the
+         filter sheet), NOT here. A home shelf's card sits inside the shelf's own
+         overflow-x scroller, whose box is exactly the card's height;
+         scrollIntoView resolves nested scrollers inside-out and clips the target
+         rect to each inner scroller before handing it outward, so a vertical
+         scroll-margin is thrown away on the way to the page scroller and the card
+         comes to rest flush at y=0 — under the tab bar (seen on the TV's Chromium
+         108). scroll-padding shrinks the page scroller's own snapport, which no
+         inner scroller can take away. */
+  [data-focus-id] {
+    scroll-margin-inline: var(--spacing-safe);
+  }
+}
