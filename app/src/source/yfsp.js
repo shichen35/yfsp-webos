@@ -199,6 +199,16 @@ export async function searchList({ keyword, page = 1, size = 36 }) {
   return { items: (d?.result || []).map(summary), total: d?.recordcount || 0, page, size, maxPage: d?.maxpage || page }
 }
 
+/**
+ * Suggestions while typing. The site has no autocomplete endpoint, so these
+ * are the titles of the first page of a real search (no pinyin initials:
+ * `qyn` finds nothing).
+ */
+export async function searchSuggest(keyword) {
+  const { items } = await searchList({ keyword, size: 10 })
+  return [...new Set(items.map((i) => i.name).filter(Boolean))]
+}
+
 // ---------------------------------------------------------------------------
 // ranking
 // ---------------------------------------------------------------------------

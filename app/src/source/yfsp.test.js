@@ -3,7 +3,7 @@
 // tokens and client IP replaced.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { categoryList, detail, homeBanners, homeShelves, imageUrl, rankList, resolveStream, searchHotKeywords, searchList, toSummary } from './yfsp.js'
+import { categoryList, detail, homeBanners, homeShelves, imageUrl, rankList, resolveStream, searchHotKeywords, searchList, searchSuggest, toSummary } from './yfsp.js'
 
 const ok = (info) => JSON.stringify({ ret: 200, data: { code: 0, msg: '', info } })
 
@@ -145,4 +145,10 @@ test('homeBanners drops ads and never throws', async (t) => {
 test('searchHotKeywords takes the first (film) group, deduped', async (t) => {
   mockGateway(t, { '/v3/list/gethotsearchlist': [[{ title: '嫁金钗' }, { title: '玉簟秋' }, { title: '嫁金钗' }], [{ title: '用户视频' }]] })
   assert.deepEqual(await searchHotKeywords(10), ['嫁金钗', '玉簟秋'])
+})
+
+test('searchSuggest is the deduped titles of a quick search', async (t) => {
+  const urls = mockGateway(t, { '/v3/list/briefsearch': [{ recordcount: 3, result: [SEARCH_ITEM, SEARCH_ITEM, { ...SEARCH_ITEM, title: '一路繁花' }] }] })
+  assert.deepEqual(await searchSuggest('繁花'), ['海上繁花', '一路繁花'])
+  assert.match(urls[0], /&size=10&/)
 })

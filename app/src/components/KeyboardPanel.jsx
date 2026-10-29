@@ -4,9 +4,9 @@
  *
  * Why a panel rather than Android TV's always-visible left column: the search
  * page keeps its box / suggestions / results stack, and the LG system keyboard
- * stays the fast path for Chinese. This is the D-pad fallback — and typing the
- * pinyin initials of a title (MN -> 魔女) is what the suggestion endpoint wants
- * anyway.
+ * stays the default and the only way to type Chinese (the site's search does
+ * not match pinyin initials). This is the D-pad fallback for English titles
+ * and numbers.
  *
  * Every key edits the page's query live, so suggestions refresh while typing.
  *
@@ -43,7 +43,7 @@ export default function KeyboardPanel({ value, onChange, onSubmit, onSystemKeybo
       <div className="mb-6 text-heading font-semibold text-fg">屏幕键盘</div>
       {/* The query as typed so far; the search box is behind the panel. */}
       <div className="mb-8 flex h-[72px] items-center rounded-tile bg-bg px-6 text-heading text-fg">
-        {value || <span className="text-fg-3">输入片名或拼音首字母</span>}
+        {value || <span className="text-fg-3">输入英文片名或数字</span>}
       </div>
 
       <div className="mb-4 grid grid-cols-6 gap-2.5">
@@ -66,7 +66,7 @@ export default function KeyboardPanel({ value, onChange, onSubmit, onSystemKeybo
         <Key row={ACTION_ROW0 + 1} col={0} label="系统键盘" wide onSelect={onSystemKeyboard} />
         <Key row={ACTION_ROW0 + 1} col={1} icon="search" label="搜索" wide onSelect={() => onSubmit(value)} />
       </div>
-      <div className="mt-6 text-caption text-fg-2">字母可输入拼音首字母，中文用系统键盘</div>
+      <div className="mt-6 text-caption text-fg-2">这里只能输入字母和数字，中文片名请用系统键盘</div>
     </div>
   )
 }
