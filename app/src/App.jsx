@@ -8,7 +8,10 @@
  * Focus layers mirror the view stack: shell = "home", detail = "detail",
  * player = "player". Each overlay pushes its focus layer on mount and pops it
  * on unmount, so the back chain and focus memory stay in lockstep with the
- * stack. Detail and player frames arrive in M3.
+ * stack.
+ *
+ * The player is the one lazy() page: its chunk (and hls.js) must stay out of
+ * the startup bundle, and it genuinely unmounts on back so playback stops.
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
@@ -26,6 +29,7 @@ import TabBar from './components/TabBar.jsx'
 import HomePage from './pages/HomePage.jsx'
 import CategoryPage from './pages/CategoryPage.jsx'
 import FilterPanel from './components/FilterPanel.jsx'
+import DetailPage from './pages/DetailPage.jsx'
 import FavoritesPage from './pages/FavoritesPage.jsx'
 import HistoryPage from './pages/HistoryPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -70,10 +74,12 @@ export default function App() {
   }, [tabs, activeTab])
 
   const top = stack[stack.length - 1]
+  const hasDetail = stack.some((f) => f.type === 'detail')
   const vis = (type) => ({ display: top.type === type ? 'block' : 'none' })
 
-  // No-op until DetailPage lands in M3-1 (it pushes { type: 'detail', id }).
-  const openDetail = useCallback(() => {}, [])
+  const openDetail = useCallback((id) => setStack((s) => [...s, { type: 'detail', id }]), [])
+  // Player arrives in M3-2.
+  const openPlayer = useCallback(() => {}, [])
 
   const openFilterFor = useCallback((category) => setFilterPanel({ open: true, category }), [])
   const closeFilter = useCallback(() => setFilterPanel({ open: false, category: null }), [])
@@ -194,6 +200,14 @@ export default function App() {
         <FilterPanel
           category={filterPanel.category}
           onClose={closeFilter}
+        />
+      )}
+
+      {hasDetail && (
+        <DetailPage
+          id={stack.find((f) => f.type === 'detail').id}
+          onPlay={(episodeIndex) => openPlayer({ id: stack.find((f) => f.type === 'detail').id, episodeIndex })}
+          style={vis('detail')}
         />
       )}
     </>

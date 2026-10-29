@@ -52,7 +52,8 @@ export function progressEntry(episodes, index, pos, dur) {
 export function episodeTitle(ep) {
   const ordinal = `第${ep.index}集`
   const title = ep.title || ordinal
-  return new RegExp(`^第0*${ep.index}集$`).test(title) ? ordinal : title
+  // yfsp names most episodes by bare number ("01"), which says no more than the ordinal.
+  return new RegExp(`^(第)?0*${ep.index}(集)?$`).test(title) ? ordinal : title
 }
 
 /**

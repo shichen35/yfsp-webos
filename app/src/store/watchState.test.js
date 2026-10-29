@@ -58,6 +58,9 @@ test('continue shelf keeps queued and finished entries, drops bare opens', () =>
 test('episode titles normalize bare ordinals and keep real titles', () => {
   assert.equal(episodeTitle({ index: 6, title: '第06集' }), '第6集')
   assert.equal(episodeTitle({ index: 6, title: '第6集' }), '第6集')
+  assert.equal(episodeTitle({ index: 6, title: '06' }), '第6集')
+  assert.equal(episodeTitle({ index: 800, title: '0801' }), '0801')
+  assert.equal(episodeTitle({ index: 1181, title: 'SP01' }), 'SP01')
   assert.equal(episodeTitle({ index: 6 }), '第6集')
   assert.equal(episodeTitle({ index: 6, title: '' }), '第6集')
   assert.equal(episodeTitle({ index: 16, title: '第6集' }), '第6集') // another episode's ordinal is a title
