@@ -78,7 +78,7 @@ olevod 的 `luna.js` 有两处 `isTV` 前置条件：`initTvEnv()` 开头 `if (!
 
 ### 代理的出站规则
 
-在 olevod 的 `service.js` 骨架上改出站头和白名单。要说清楚的是，下面这套规则还没有端到端播过：`mvp/proxy.cjs` 在桌面 Chrome 里用 hls.js 1.5.17 播通时，出站一直带着 `Referer: https://www.yfsp.tv/`，白名单是 `pipecdn.vip`、`global-cdn.me`、`yfsp.tv` 三个固定后缀，还会改写 m3u8 里的绝对地址。「不带 Referer」「m3u8 不改写」只有 curl 和 `probe.cjs` 的直连请求作证。M1-4 的完成标准里补了一条：用按本节规则写的代理配 hls.js light 实际播一段。
+在 olevod 的 `service.js` 骨架上改出站头和白名单。要说清楚的是，下面这套规则还没有端到端播过：`mvp/proxy.cjs` 在桌面 Chrome 里用 hls.js 1.5.17 播通时，出站一直带着 `Referer: https://www.yfsp.tv/`，白名单是 `pipecdn.vip`、`global-cdn.me`、`yfsp.tv` 三个固定后缀，还会改写 m3u8 里的绝对地址。「不带 Referer」「m3u8 不改写」只有 curl 和 `probe.cjs` 的直连请求作证。M1-4 的完成标准里补了一条：用按本节规则写的代理配 hls.js light 实际播一段。2026-10-29 已在 M1-4 验证：`service.js` 按本节规则（不带 Referer、m3u8 不改写、后缀加路径白名单）配 hls.js light，在桌面浏览器里从 `http://127.0.0.1:8099` 起播，`currentTime` 10 秒内走到 10，没有报错。
 
 - 不发 `Origin`，不转发客户端的 `Origin`、`Referer`、`Cookie`。`Referer` 也不带（带 `https://www.yfsp.tv/` 同样能过，但少一个指纹更好）。olevod 的 `Referer: https://www.olevod.com/` 在这里会被 520。
 - `User-Agent` 固定成一个 webOS 的 Chrome UA。CDN 对 `curl/*`、`python-requests/*` 回 403。

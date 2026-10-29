@@ -1,0 +1,10 @@
+{
+  "id": "com.yfsp.app.service",
+  "description": "yfsp data channel: Luna fetch + local media proxy",
+  "services": [
+    {
+      "name": "com.yfsp.app.service",
+      "description": "yfsp data channel: Luna fetch + local media proxy"
+    }
+  ]
+}

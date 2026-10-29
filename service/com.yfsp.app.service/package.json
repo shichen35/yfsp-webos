@@ -1,0 +1,6 @@
+{
+  "name": "com.yfsp.app.service",
+  "version": "1.0.0",
+  "description": "yfsp data channel: Luna fetch + local media proxy",
+  "main": "service.js"
+}

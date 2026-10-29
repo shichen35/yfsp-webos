@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sim": "vite build && cp -r webos-meta/. dist/ && ares-launch -s 26 -sp /Applications dist"
+    "sim": "vite build && cp -r webos-meta/. dist/ && ares-launch -s 26 -sp /Applications dist",
+    "proxy": "node ../service/com.yfsp.app.service/service.js"
   },
   "dependencies": {
     "hls.js": "^1.7.3",
