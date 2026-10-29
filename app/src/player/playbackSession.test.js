@@ -2,7 +2,7 @@
 // Run: node --test app/src/player/playbackSession.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createPlayback } from './playbackSession.js'
+import { createPlayback, fatalAction } from './playbackSession.js'
 
 // A <video> whose decoder is wedged: writes to currentTime are recorded but
 // never move the playhead; only advance() does. A 0.8s buffered hole sits
@@ -107,4 +107,16 @@ test('escalates nudge -> soft reload x3 -> error on a frozen playhead, and reset
   ])
 
   pb.destroy()
+})
+
+test('a first 403 asks for a fresh stream, a second one fails', () => {
+  const forbidden = { type: 'networkError', details: 'fragLoadError', response: { code: 403 } }
+  assert.deepEqual(fatalAction(forbidden, 0), { action: 'refresh' })
+  assert.deepEqual(fatalAction(forbidden, 1), { action: 'fail', kind: 'network', status: 403 })
+})
+
+test('other fatal errors keep their kind and status', () => {
+  assert.deepEqual(fatalAction({ type: 'networkError', response: { code: 520 } }, 0), { action: 'fail', kind: 'network', status: 520 })
+  assert.deepEqual(fatalAction({ type: 'mediaError' }, 0), { action: 'fail', kind: 'decode', status: undefined })
+  assert.deepEqual(fatalAction({ type: 'otherError' }, 0), { action: 'fail', kind: 'source', status: undefined })
 })

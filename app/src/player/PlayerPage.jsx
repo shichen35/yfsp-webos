@@ -593,8 +593,21 @@ export default function PlayerPage({ id, episodeIndex }) {
 
     let cancelled = false
     let playback = null
+    // The stream's token expired mid-play: resolve the episode again and let the
+    // session pick up from where it was.
+    const refreshStream = () => {
+      resolveStream(data.id, ep)
+        .then((stream) => {
+          if (!cancelled) playback?.reload(mediaUrl(stream.url))
+        })
+        .catch((e) => {
+          if (!cancelled) fail(resolveErrorKind(e))
+        })
+    }
+
     const startPlayback = (url) => createPlayback(video, {
       src: mediaUrl(url),
+      onExpired: refreshStream,
       resumePos,
       seekPending: () => pendingSeekRef.current != null,
       onStatus: (s, kind) => {

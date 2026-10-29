@@ -74,15 +74,32 @@ const LOAD_POLICY = {
 }
 
 /*
- * createPlayback(video, options) -> { started, seekable, destroy() }
+ * What a fatal hls.js error should do. A 403 on the stream means its token
+ * expired (the playlist and segment URLs carry signed, time-limited tokens), so
+ * the first one asks the page for a fresh URL; a second 403 before playback
+ * resumes means a fresh URL didn't help either, and fails like any network
+ * error. `response.code` is the HTTP status hls.js saw (the proxy passes the
+ * CDN's through).
+ */
+export function fatalAction(info, forbiddenStreak) {
+  const status = info.response?.code
+  if (info.type === 'networkError' && status === 403 && forbiddenStreak === 0) return { action: 'refresh' }
+  const kind = info.type === 'networkError' ? 'network' : info.type === 'mediaError' ? 'decode' : 'source'
+  return { action: 'fail', kind, status }
+}
+
+/*
+ * createPlayback(video, options) -> { started, seekable, reload(src), destroy() }
  *
  *   src          stream url to attach
  *   resumePos    seconds to start from (0 = the beginning)
  *   seekPending  () => bool; a seek the user is still stepping toward holds
  *                the watchdog off
- *   onStatus(status, kind)  'ok' on every 'playing'; 'error' with a kind
- *                (network | decode | source), or none when the stall ladder
- *                runs out
+ *   onStatus(status, kind, httpStatus)  'ok' on every 'playing'; 'error' with
+ *                a kind (network | decode | source) and the HTTP status when
+ *                one is known, or no kind when the stall ladder runs out
+ *   onExpired()  the stream answered 403: fetch a fresh URL and hand it to
+ *                reload(); without this option a 403 just fails
  *   onStart(canSeek)        first 'playing' of this load
  *   onPaused(paused)
  *   onTrack(info)           { width, height, bitrate } of the playing level
@@ -94,6 +111,8 @@ const LOAD_POLICY = {
  */
 export function createPlayback(video, opts) {
   const { src, resumePos, seekPending } = opts
+  let startPos = resumePos // where the next MANIFEST_PARSED starts loading
+  let forbiddenStreak = 0 // 403s since the last 'playing'
   let hls = null
   let cancelled = false
   let started = false // first 'playing' of THIS episode load
@@ -102,7 +121,7 @@ export function createPlayback(video, opts) {
   let seekable = true // assume seekable until the stream says otherwise
   let pendingMeta = null // a native soft reload's seek-back, until metadata arrives
 
-  const fail = (kind) => opts.onStatus('error', kind)
+  const fail = (kind, httpStatus) => opts.onStatus('error', kind, httpStatus)
 
   // Live truth, not the sampled flag: resume decisions run before anything
   // has seen the update.
@@ -239,6 +258,7 @@ export function createPlayback(video, opts) {
   }, STALL_CHECK_MS)
 
   const onPlaying = () => {
+    forbiddenStreak = 0
     opts.onStatus('ok')
     // hls.js can snap the first frame back to 0 — correct once.
     updateSeekable()
@@ -321,7 +341,7 @@ export function createPlayback(video, opts) {
             hls.autoLevelCapping = lvl // ABR stays below the UHD tier
           }
           // Resume at load time — starting at 0 and seeking would double-buffer.
-          hls.startLoad(resumePos > 0 ? resumePos : -1)
+          hls.startLoad(startPos > 0 ? startPos : -1)
           video.play().catch(() => {})
         })
         // ABR moves between levels while playing; follow the one in use.
@@ -331,13 +351,13 @@ export function createPlayback(video, opts) {
         })
         hls.on(Hls.Events.ERROR, (_evt, info) => {
           if (!info.fatal) return
-          fail(
-            info.type === Hls.ErrorTypes.NETWORK_ERROR
-              ? 'network'
-              : info.type === Hls.ErrorTypes.MEDIA_ERROR
-                ? 'decode'
-                : 'source',
-          )
+          const next = fatalAction(info, opts.onExpired ? forbiddenStreak : 1)
+          if (next.action === 'refresh') {
+            forbiddenStreak++
+            opts.onExpired()
+          } else {
+            fail(next.kind, next.status)
+          }
         })
         hls.attachMedia(video)
         hls.loadSource(src)
@@ -363,6 +383,13 @@ export function createPlayback(video, opts) {
     },
     get seekable() {
       return seekable
+    },
+    // Swap in a fresh URL for the same episode (after onExpired) and carry on
+    // from where playback was.
+    reload(newSrc) {
+      if (cancelled || !hls) return
+      startPos = lastKnown.pos > 1 ? lastKnown.pos : resumePos
+      hls.loadSource(newSrc)
     },
     destroy() {
       cancelled = true
