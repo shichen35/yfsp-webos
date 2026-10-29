@@ -12,7 +12,7 @@
  *   Page     { items: Summary[], total, page, size, maxPage }
  *   Banner   { id, name, pic }
  */
-import { apiGet, apiPost, ApiError, HOST } from './yfspHttp.js'
+import { apiGet, apiPost, ApiError, HOST, isChallenged } from './yfspHttp.js'
 import { CATEGORIES } from '../config/taxonomy.js'
 
 const IMG_BASE = 'https://static.yfsp.tv'
@@ -215,4 +215,4 @@ export async function rankList() {
   return out
 }
 
-export { ApiError }
+export { ApiError, isChallenged }
