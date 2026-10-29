@@ -120,6 +120,9 @@ export function createPlayback(video, opts) {
   const currentSrc = src // the watchdog reloads from here on a native-path stall
   let seekable = true // assume seekable until the stream says otherwise
   let pendingMeta = null // a native soft reload's seek-back, until metadata arrives
+  // A bare media playlist declares no bitrate either: estimate it from the
+  // first few segments' size over their duration (bits per second).
+  const est = { bytes: 0, secs: 0, frags: 0, bitrate: 0 }
 
   const fail = (kind, httpStatus) => opts.onStatus('error', kind, httpStatus)
 
@@ -287,7 +290,7 @@ export function createPlayback(video, opts) {
   const onResize = () => {
     const lvl = hls?.levels?.[hls.currentLevel]
     if (lvl?.height || video.videoHeight <= 0) return
-    opts.onTrack({ width: video.videoWidth, height: video.videoHeight, bitrate: lvl?.bitrate || 0 })
+    opts.onTrack({ width: video.videoWidth, height: video.videoHeight, bitrate: lvl?.bitrate || est.bitrate })
   }
   const onPlay = () => opts.onPaused(false)
   const onPause = () => opts.onPaused(true)
@@ -351,6 +354,14 @@ export function createPlayback(video, opts) {
           const lvl = hls?.levels?.[info.level]
           if (lvl?.height) opts.onTrack({ width: lvl.width, height: lvl.height, bitrate: lvl.bitrate })
           else onResize()
+        })
+        hls.on(Hls.Events.FRAG_LOADED, (_evt, { frag, payload }) => {
+          if (hls?.levels?.[frag.level]?.bitrate || est.frags >= 3 || !(frag.duration > 0)) return
+          est.bytes += payload?.byteLength || frag.stats?.loaded || 0
+          est.secs += frag.duration
+          est.frags++
+          est.bitrate = Math.round((est.bytes * 8) / est.secs)
+          onResize()
         })
         hls.on(Hls.Events.ERROR, (_evt, info) => {
           if (!info.fatal) return

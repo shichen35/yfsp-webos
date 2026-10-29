@@ -10,7 +10,7 @@
 
 详情数据（标题、剧集列表）通过 `loadDetail(id)`（`app/src/api/feeds.js`）读，下面的详情页已经缓存过，进播放器不会重新请求。
 
-播放地址不在详情里，每一集进播放器时现取：`resolveStream(id, episode)`（`app/src/source/yfsp.js`）用剧集 key 配 `a=0` 请求 `v3/video/play`，取可播的那一档（未登录只有「标清 576P」）。m3u8 地址带着约 48 小时的令牌，还签进了请求方的公网 IP，所以从不缓存。拿到的地址再经 `mediaUrl()`（`app/src/api/luna.js`）改写成本地代理地址：视频 CDN 拒绝任何站外 Origin，而 hls.js 一定会带，所以浏览器、模拟器和电视都要经过代理，见 [数据通道](data-channel.md)。左上角画质卡片显示这一档的名字，加上 hls.js 报的分辨率和码率。
+播放地址不在详情里，每一集进播放器时现取：`resolveStream(id, episode)`（`app/src/source/yfsp.js`）用剧集 key 配 `a=0` 请求 `v3/video/play`，取可播的那一档（未登录只有「标清 576P」）。m3u8 地址带着约 48 小时的令牌，还签进了请求方的公网 IP，所以从不缓存。拿到的地址再经 `mediaUrl()`（`app/src/api/luna.js`）改写成本地代理地址：视频 CDN 拒绝任何站外 Origin，而 hls.js 一定会带，所以浏览器、模拟器和电视都要经过代理，见 [数据通道](data-channel.md)。左上角画质卡片显示这一档的名字、分辨率和码率。站点给的是不带主列表的媒体播放列表，不声明分辨率和码率，所以分辨率读 `<video>` 解码出的尺寸，码率用前三个分片的字节数除以时长估算（576 档实测约 530 kbps）。
 
 ## hls.js 优先，原生 HLS 只做兜底
 
