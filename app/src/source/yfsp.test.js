@@ -3,7 +3,7 @@
 // tokens and client IP replaced.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { categoryList, detail, homeBanners, homeShelves, imageUrl, rankList, resolveStream, searchHotKeywords, searchList, searchSuggest, toSummary } from './yfsp.js'
+import { categoryList, detail, homeBanners, imageUrl, rankList, resolveStream, searchHotKeywords, searchList, searchSuggest, toSummary } from './yfsp.js'
 
 const ok = (info) => JSON.stringify({ ret: 200, data: { code: 0, msg: '', info } })
 
@@ -120,12 +120,6 @@ test('searchList signs the form body and keeps the keyword in the URL', async (t
   const urls = mockGateway(t, { '/v3/list/briefsearch': [{ recordcount: 0, result: [] }] })
   await searchList({ keyword: '繁花' })
   assert.match(urls[0], /briefsearch\?tags=%E7%B9%81%E8%8A%B1&orderby=4&page=1&size=36&desc=1&isserial=-1&v=1 BODY tags=%E7%B9%81%E8%8A%B1&vv=[0-9a-f]{32}&pub=\d+$/)
-})
-
-test('homeShelves follows taxonomy order and skips empty channels', async (t) => {
-  mockGateway(t, { '/v3/home/getAllVideo': [{ tvList: [LIST_ITEM], filmList: [LIST_ITEM], sportList: [], circleList: null }] })
-  const shelves = await homeShelves()
-  assert.deepEqual(shelves.map((s) => [s.key, s.title, s.items.length]), [['movie', '电影', 1], ['drama', '电视剧', 1]])
 })
 
 test('homeBanners drops ads and never throws', async (t) => {

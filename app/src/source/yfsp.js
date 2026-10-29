@@ -32,7 +32,7 @@ export function imageUrl(pic, size) {
   return `${full}${full.includes('?') ? '&' : '?'}w=${m[1]}&h=${m[2]}&format=jpg&mode=crop`
 }
 
-// One normalizer for every list shape: list/Search and getAllVideo use `key` /
+// One normalizer for every list shape: list/Search and detail use `key` /
 // `image`, search and ranking use `contxt` / `imgPath` (in list items `contxt`
 // is the synopsis, so `key` wins). imgPath may point at a small variant
 // ("xxxs.gif"); the site strips the s. `score` is the 0-10 rating everywhere;
@@ -139,23 +139,6 @@ export async function categoryList({ cid, filter = {}, page = 1, size = 36 }) {
     size,
     maxPage: d?.maxpage || page,
   }
-}
-
-// getAllVideo groups its rows by channel under these keys.
-const SHELF_KEYS = {
-  filmList: 'movie', tvList: 'drama', varietyList: 'variety', animeList: 'anime',
-  shortList: 'short', sportList: 'sport', documentaryList: 'documentary',
-}
-
-/** Every channel's home shelf in one request, in taxonomy order. */
-export async function homeShelves() {
-  const [d] = await apiGet(HOST.m10, '/v3/home/getAllVideo', { cinema: 1, set: 1, size: 13, isTopic: 1, cacheable: 1 })
-  const byChannel = {}
-  // A shelf row holds at most 12 cards; the gateway sends 13 whatever `size` says.
-  for (const [k, id] of Object.entries(SHELF_KEYS)) byChannel[id] = (d?.[k] || []).slice(0, 12).map(summary)
-  return CATEGORIES.filter((c) => byChannel[c.id]?.length).map((c) => ({
-    key: c.id, title: c.name, categoryId: c.id, items: byChannel[c.id],
-  }))
 }
 
 /**

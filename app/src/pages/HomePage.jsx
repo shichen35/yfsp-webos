@@ -1,14 +1,15 @@
 /*
  * Home — the default landing screen. A featured row on top, then horizontal
  * shelves in this order:
- *   Continue Watching -> My Favorites -> 热播榜 -> 电影 / 电视剧 / 综艺 / 动漫 / 短剧.
+ *   Continue Watching -> My Favorites -> 热播榜 -> Popular 电影 / 电视剧 / 综艺 / 动漫 / 短剧.
  *
  * The featured row is the first two carousel banners (ads already dropped by
  * the adapter); with none (or a failed request) the page simply opens on its
  * shelves.
  *
- * The channel shelves come from one request and the chart from another, so a
- * failing chart just leaves its row out. Continue Watching and Favorites come
+ * The popular rows are fetched concurrently (allSettled, so one channel failing
+ * just empties that row) and the chart separately, so a failing chart just
+ * leaves its row out. Continue Watching and Favorites come
  * from the local stores and update live. Empty rows are not rendered, and focus
  * rows are numbered in actual render order so up/down stays continuous.
  */
@@ -16,16 +17,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Shelf from '../components/Shelf.jsx'
 import Thumb from '../components/Thumb.jsx'
 import { IconLabel } from '../components/Icon.jsx'
-import { loadHomeShelves, loadHomeRank, loadHomeBanners, invalidateHome } from '../api/feeds.js'
+import { loadHomePopular, loadHomeRank, loadHomeBanners, invalidateHome, POPULAR } from '../api/feeds.js'
 import { useStoreValue } from '../hooks/useStore.js'
 import { historyStore } from '../store/history.js'
 import { continueWatching } from '../store/watchState.js'
 import { favoritesStore } from '../store/favorites.js'
 import { settingsStore, getSetting } from '../store/settings.js'
 import { useFocusable, setGeometryVerticalGroup } from '../hooks/useFocus.js'
-
-// Channel shelves shown on home; 体育 and 纪录片 live on their tabs only.
-const HOME_CHANNELS = ['movie', 'drama', 'variety', 'anime', 'short']
 
 function RetryButton({ group, onRetry }) {
   const { props } = useFocusable({ layer: 'home', group, row: 0, col: 0, onSelect: onRetry })
@@ -60,7 +58,7 @@ export default function HomePage({ group = 'content', onOpenDetail, refreshNonce
   const history = useStoreValue(historyStore)
   const favorites = useStoreValue(favoritesStore)
   const settings = useStoreValue(settingsStore)
-  const [shelves, setShelves] = useState(null) // null while loading; array once resolved
+  const [popular, setPopular] = useState(null) // null while loading; array once resolved
   const [rank, setRank] = useState([]) // the 热播榜 row, empty when the chart fails
   const [featured, setFeatured] = useState([]) // the first two carousel banners, if any
 
@@ -72,10 +70,10 @@ export default function HomePage({ group = 'content', onOpenDetail, refreshNonce
   const load = useCallback((clear = true) => {
     const token = ++genRef.current
     const current = () => token === genRef.current
-    if (clear) setShelves(null)
-    loadHomeShelves()
-      .then((rows) => current() && setShelves(rows.filter((r) => HOME_CHANNELS.includes(r.key))))
-      .catch(() => current() && setShelves([]))
+    if (clear) setPopular(null)
+    loadHomePopular()
+      .then((rows) => current() && setPopular(rows))
+      .catch(() => current() && setPopular(POPULAR.map((p) => ({ ...p, items: [] }))))
     loadHomeRank()
       .then((items) => current() && setRank(items))
       .catch(() => current() && setRank([]))
@@ -134,9 +132,9 @@ export default function HomePage({ group = 'content', onOpenDetail, refreshNonce
   if (continueItems.length) rows.push({ key: 'continue', title: '继续观看', items: continueItems, isContinue: true })
   if (favItems.length) rows.push({ key: 'fav', title: '我的收藏', items: favItems })
   if (rank.length && getSetting(settings, 'homeShowRank')) rows.push({ key: 'rank', title: '热播榜', items: rank })
-  for (const s of shelves || []) rows.push(s)
+  for (const p of popular || []) if (p.items.length) rows.push(p)
 
-  if (shelves === null && rows.length === 0) {
+  if (popular === null && rows.length === 0) {
     return (
       <div className="pt-4">
         {featuredRow}
@@ -144,7 +142,7 @@ export default function HomePage({ group = 'content', onOpenDetail, refreshNonce
       </div>
     )
   }
-  if (shelves !== null && rows.length === 0 && !featuredRow) {
+  if (popular !== null && rows.length === 0 && !featuredRow) {
     return (
       <div className="flex h-[860px] flex-col items-center justify-center gap-7 text-heading text-fg-2">
         <div>内容加载失败</div>

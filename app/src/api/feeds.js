@@ -5,12 +5,12 @@
  * The cache keys live only here: pages load, page and invalidate a feed by its
  * own arguments and never see a key.
  */
-import { categoryList, homeBanners, homeShelves, rankList, detail, isChallenged } from '../source/index.js'
+import { categoryList, homeBanners, rankList, detail, isChallenged } from '../source/index.js'
 import { CATEGORIES, getCategory } from '../config/taxonomy.js'
 import { DEFAULT_FILTER } from '../store/filters.js'
 import * as pageCache from '../store/pageCache.js'
 
-const HOME_SHELVES_KEY = 'home:shelves'
+const HOME_POPULAR_KEY = 'home:popular'
 const HOME_BANNERS_KEY = 'home:banners'
 const HOME_RANK_KEY = 'home:rank'
 
@@ -20,9 +20,28 @@ export function loadHomeBanners() {
   return pageCache.loadOnce(HOME_BANNERS_KEY, homeBanners)
 }
 
-// The home page's channel shelves, one request for all of them.
-export function loadHomeShelves() {
-  return pageCache.loadOnce(HOME_SHELVES_KEY, homeShelves)
+// The home page's popular rows, one per channel in tab order (体育 and 纪录片
+// live on their tabs only).
+export const POPULAR = [
+  { key: 'movie', title: '热门电影', category: 'movie' },
+  { key: 'drama', title: '热门电视剧', category: 'drama' },
+  { key: 'variety', title: '热门综艺', category: 'variety' },
+  { key: 'anime', title: '热门动漫', category: 'anime' },
+  { key: 'short', title: '热门短剧', category: 'short' },
+]
+
+// Concurrent within the row set (allSettled) but exposed as one cached unit.
+// orderby 2 is popularity.
+export function loadHomePopular() {
+  return pageCache.loadOnce(HOME_POPULAR_KEY, async () => {
+    const results = await Promise.allSettled(
+      POPULAR.map((p) => categoryList({ cid: getCategory(p.category).cid, filter: { sort: '2' }, size: 12 })),
+    )
+    return POPULAR.map((p, i) => ({
+      ...p,
+      items: results[i].status === 'fulfilled' ? results[i].value.items : [],
+    }))
+  })
 }
 
 // The home page's 热播榜 shelf: the week charts of every channel that has
@@ -51,7 +70,7 @@ export function loadDetail(id) {
   return pageCache.loadOnce(`detail:${id}`, () => detail(id))
 }
 
-// Refresh / retry: forget the home feed (shelves, chart and banners) so the page's
+// Refresh / retry: forget the home feed (popular rows, chart and banners) so the page's
 // next load refetches.
 export function invalidateHome() {
   pageCache.invalidate('home:')
@@ -87,7 +106,7 @@ export function invalidateCategory(category) {
  */
 export async function prefetchAll(shouldStop = () => false) {
   const stop = () => shouldStop() || isChallenged()
-  const loaders = [loadHomeShelves, loadHomeBanners, loadHomeRank, ...CATEGORIES.map((c) => () => loadCategoryPage(c.id, DEFAULT_FILTER))]
+  const loaders = [loadHomePopular, loadHomeBanners, loadHomeRank, ...CATEGORIES.map((c) => () => loadCategoryPage(c.id, DEFAULT_FILTER))]
   for (const load of loaders) {
     if (stop()) return
     try {

@@ -106,7 +106,6 @@ app/src/source/
 | --- | --- | --- |
 | `categoryList({category, filter, page, size})` | `m10/api/list/Search` | `Page<Summary>` |
 | `homeBanners()` | `m10/v3/home/getflashbanner`（需 `region`，先取 `getmyregion`） | `Banner[]`，过滤掉 `external:true` 的广告；失败返回 `[]` |
-| `homeShelves()` | `m10/v3/home/getAllVideo`（一次请求拿到全部频道） | `[{ key, title, categoryId, items: Summary[] }]` |
 | `rankList()` | `rankv21/api/list/GetVideoRank?key=All` | `{ [categoryId]: { week, month, year } }`，视决策 D3 |
 | `searchHotKeywords(limit)` | `rankv21/v3/list/gethotsearchlist` | `string[]`，取第一组（影视） |
 | `searchList({keyword, page, size})` | `POST rankv21/v3/list/briefsearch` | `Page<Summary>`，只要影视结果 |
@@ -219,7 +218,7 @@ POST: body + "&vv=" + vv + "&pub=" + pub      （URL 上的 query 不签）
 
 | 页面 | 来源 | 和 olevod 的差别 |
 | --- | --- | --- |
-| 首页 | 改造 | 轮播（过滤广告帧）、继续观看、我的收藏、五个频道货架（电影、电视剧、综艺、动漫、短剧）。货架数据来自 `homeShelves()` 一次请求，不再前端拼四次分类列表 |
+| 首页 | 改造 | 轮播（过滤广告帧）、继续观看、我的收藏、热播榜，以及热门电影、热门电视剧、热门综艺、热门动漫、热门短剧五排。和 olevod 一样，每排是 `categoryList` 按人气（`orderby=2`）取 12 部，五个请求并发 |
 | 分类页 | 改造 | 换筛选面板（第 6 节）；加载结束条件加上 `page >= maxpage` |
 | 搜索 | 改造 | 热门搜索用 `gethotsearchlist`；结果只留影视。没有联想接口，屏幕键盘的去留见 D5 |
 | 详情 | 改造 | 字段统一后去掉手写映射；加热度、语言标签；50 集分段和正倒序沿用；VIP 集显示锁标，点了提示「会员剧集，暂不支持」 |
@@ -345,7 +344,7 @@ sequenceDiagram
 - 「不带 Referer」：只有 curl 和 `probe.cjs` 的直连对照；MVP 代理播通时一直带着站点 Referer。按不带 Referer 设计，M1-4 端到端补验。
 - 签名规范化：MVP 最初对原始查询串直接转小写签名，中文参数（`region=大陆`）会被网关判为「用户签名错误」。已改成照站点 `get_query()` 先 `decodeURIComponent` 再签，`sign-check.mjs` 里加了中文向量和线上用例。
 - 地区：界面调研怀疑片库随 `region` 变化；接口调研实测 `region` 改成别的值播放地址不变，地区由服务器按 IP 判断，只有轮播接口不带 `region` 时为空。客户端只在轮播上带 `getmyregion` 返回的地区码，其余接口照抄站点参数。
-- 首页数据：复用地图建议从首页 HTML 内联 JSON 取分区；接口调研找到了不用签名的 `getAllVideo`，采用后者。
+- 首页数据：复用地图建议从首页 HTML 内联 JSON 取分区；接口调研找到了不用签名的 `getAllVideo`，M2 先采用了它。和 olevod 对比后（2026-10-29）改回 olevod 的做法：每个频道按人气取一排，标题是「热门电影」这类。`getAllVideo` 的内容偏最新，不是最热。
 
 ### 风险与应对
 
