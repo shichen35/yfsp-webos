@@ -281,10 +281,9 @@ export function createPlayback(video, opts) {
     const code = video.error?.code
     fail(code === 2 ? 'network' : code === 3 ? 'decode' : 'source')
   }
-  // Native-HLS fallback only: no level data, so the element's own frame size
-  // is all there is. On the hls.js path LEVEL_SWITCHED is the better source.
-  // The native path has no level data, and neither does hls.js on a bare media
-  // playlist (no master to declare a resolution): read the decoded size.
+  // The element's own frame size, for when no level declares one: the native
+  // fallback has no level data, and neither does hls.js on a bare media
+  // playlist (no master). A level that does declare a size wins (LEVEL_SWITCHED).
   const onResize = () => {
     const lvl = hls?.levels?.[hls.currentLevel]
     if (lvl?.height || video.videoHeight <= 0) return
@@ -350,7 +349,8 @@ export function createPlayback(video, opts) {
         // ABR moves between levels while playing; follow the one in use.
         hls.on(Hls.Events.LEVEL_SWITCHED, (_evt, info) => {
           const lvl = hls?.levels?.[info.level]
-          if (lvl) opts.onTrack({ width: lvl.width, height: lvl.height, bitrate: lvl.bitrate })
+          if (lvl?.height) opts.onTrack({ width: lvl.width, height: lvl.height, bitrate: lvl.bitrate })
+          else onResize()
         })
         hls.on(Hls.Events.ERROR, (_evt, info) => {
           if (!info.fatal) return
