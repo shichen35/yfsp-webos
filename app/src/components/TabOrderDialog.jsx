@@ -5,14 +5,15 @@
  * tab bar; showing puts it back in the slot it had, because settings.tabOrder
  * keeps every middle tab (hidden ones included) and only the tab bar filters.
  * 首页 stays pinned first, so its arrows are inert. The pinned icon tabs (搜索
- * and 收藏 / 历史 / 设置 / 账号) are never listed: 设置 carries the entry back
+ * and 收藏 / 历史 / 设置) are never listed: 设置 carries the entry back
  * here, and they keep their places at the two ends of the bar.
  *
  * Writes land immediately, so the tab bar behind the dialog updates live.
  * Back or 完成 closes; 重置为默认 drops both the saved order and the hidden set.
  *
  * Focus grid (own "tabsort" layer): 显示中 rows first (col 0 = 上移, col 1 =
- * 下移, col 2 = 隐藏), then 已隐藏 rows (col 0 = 显示), then 完成, then 重置.
+ * 下移, col 2 = 隐藏), then 已隐藏 rows (col 0 = 显示), then one row with
+ * 完成 (col 0) and 重置 (col 1).
  * Hiding or showing changes the row count, so the follow-up focus is queued in
  * a ref and applied after the re-render, once the new ids are registered.
  */
@@ -38,8 +39,8 @@ function RowButton({ row, col, icon, label, disabled, wide = false, onSelect }) 
   )
 }
 
-function DialogButton({ row, label, onSelect }) {
-  const { props } = useFocusable({ layer: LAYER, group: 'content', row, col: 0, onSelect })
+function DialogButton({ row, col, label, onSelect }) {
+  const { props } = useFocusable({ layer: LAYER, group: 'content', row, col, onSelect })
   return (
     <button className="focusable tile-btn w-full bg-elev-2 text-fg" {...props}>
       {label}
@@ -57,7 +58,6 @@ export default function TabOrderDialog({ onClose }) {
   const { shown, hidden: hiddenTabs } = useMemo(() => tabRows(state), [state])
 
   const doneRow = shown.length + hiddenTabs.length
-  const resetRow = doneRow + 1
 
   // Focus to apply once the changed row set has rendered.
   const pendingFocusRef = useRef(null)
@@ -99,8 +99,9 @@ export default function TabOrderDialog({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center">
-      {/* Sized so the default 7 tabs fit without scrolling: one-line intro,
-          70px rows, ≈950px in all; hidden tabs add rows and the list scrolls. */}
+      {/* Sized so the default 8 tabs fit without scrolling: one-line intro,
+          70px rows, one footer row, ≈960px in all; hidden tabs add rows and
+          the list scrolls. */}
       <div className="flex max-h-[960px] w-[720px] flex-col rounded-surface border border-elev-2 bg-elev px-10 pt-11 pb-8">
         <div className="mb-4 shrink-0 text-title text-fg">标签栏</div>
         <div className="mb-6 shrink-0 text-body leading-normal text-fg-2">
@@ -130,9 +131,9 @@ export default function TabOrderDialog({ onClose }) {
           ))}
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3.5">
-          <DialogButton row={doneRow} label="完成" onSelect={onClose} />
-          <DialogButton row={resetRow} label="重置为默认" onSelect={reset} />
+        <div className="grid shrink-0 grid-cols-2 gap-3.5">
+          <DialogButton row={doneRow} col={0} label="完成" onSelect={onClose} />
+          <DialogButton row={doneRow} col={1} label="重置为默认" onSelect={reset} />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 /*
- * 设置 tab: a page title, then a grouped list (rows 0-3, col 0 of the tab's
+ * 设置 tab: a page title, then a grouped list (rows 0-4, col 0 of the tab's
  * content group) with the app version as a plain label below. The tab bar's
  * order and visibility are edited in TabOrderDialog; clearing the watch
  * history lives on the 历史 tab, next to the records it deletes.
@@ -72,11 +72,18 @@ export default function SettingsPage({ group = 'content' }) {
         <SettingsToggle
           group={group}
           row={2}
+          label="首页显示热播榜"
+          on={getSetting(settings, 'homeShowRank')}
+          onToggle={() => toggleSetting('homeShowRank')}
+        />
+        <SettingsToggle
+          group={group}
+          row={3}
           label="平滑滚动"
           on={getSetting(settings, 'smoothScroll')}
           onToggle={() => toggleSetting('smoothScroll')}
         />
-        <SettingsRow group={group} row={3} label="标签栏顺序与显示" onSelect={() => setTabOrderOpen(true)} />
+        <SettingsRow group={group} row={4} label="标签栏顺序与显示" onSelect={() => setTabOrderOpen(true)} />
       </div>
       {/* 34px = group p-1.5 + border + row focus border + px-6: lines up with the row labels. */}
       <div className="mt-5 pl-[34px] text-caption text-fg-3">版本 {__APP_VERSION__}</div>

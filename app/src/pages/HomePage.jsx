@@ -133,7 +133,7 @@ export default function HomePage({ group = 'content', onOpenDetail, refreshNonce
   const rows = []
   if (continueItems.length) rows.push({ key: 'continue', title: '继续观看', items: continueItems, isContinue: true })
   if (favItems.length) rows.push({ key: 'fav', title: '我的收藏', items: favItems })
-  if (rank.length) rows.push({ key: 'rank', title: '热播榜', items: rank })
+  if (rank.length && getSetting(settings, 'homeShowRank')) rows.push({ key: 'rank', title: '热播榜', items: rank })
   for (const s of shelves || []) rows.push(s)
 
   if (shelves === null && rows.length === 0) {
