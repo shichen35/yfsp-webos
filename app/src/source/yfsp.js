@@ -80,9 +80,12 @@ export async function detail(id) {
     .map((e, i) => ({ index: i + 1, title: e.name, vip: !!e.isVip, key: e.key }))
     .reverse()
 
+  const base = summary(d)
   return {
-    ...summary(d),
+    ...base,
     id: d.key || id,
+    // A movie's lastName is its quality ("1080P集全"), not progress.
+    remarks: episodes.length > 1 ? base.remarks : '',
     genreName: d.cidMapper || '',
     director: names(d.directors),
     cast: names(d.stars),

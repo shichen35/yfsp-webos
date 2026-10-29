@@ -283,9 +283,12 @@ export function createPlayback(video, opts) {
   }
   // Native-HLS fallback only: no level data, so the element's own frame size
   // is all there is. On the hls.js path LEVEL_SWITCHED is the better source.
+  // The native path has no level data, and neither does hls.js on a bare media
+  // playlist (no master to declare a resolution): read the decoded size.
   const onResize = () => {
-    if (hls) return
-    if (video.videoHeight > 0) opts.onTrack({ width: video.videoWidth, height: video.videoHeight, bitrate: 0 })
+    const lvl = hls?.levels?.[hls.currentLevel]
+    if (lvl?.height || video.videoHeight <= 0) return
+    opts.onTrack({ width: video.videoWidth, height: video.videoHeight, bitrate: lvl?.bitrate || 0 })
   }
   const onPlay = () => opts.onPaused(false)
   const onPause = () => opts.onPaused(true)

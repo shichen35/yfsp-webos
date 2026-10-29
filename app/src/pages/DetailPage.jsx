@@ -12,8 +12,8 @@
  *   row 1     playlist controls after the 选集 heading — the order toggle, plus
  *             range chips on long lists (omitted entirely for a single-episode
  *             title, i.e. a movie)
- *   row 2+    the episode grid, on the poster grid's 6 columns (row 1+ when
- *             there are no playlist controls)
+ *   row 2+    the episode grid, on the poster grid's 6 columns; a movie has
+ *             neither (its one "episode" is named after its quality, 576P)
  *
  * Episode order is a DISPLAY concern only. The source adapter's detail returns episodes
  * newest-first and that canonical list is never reordered ("next episode" goes
@@ -324,26 +324,28 @@ export default function DetailPage({ id, onPlay, style }) {
             </div>
           )}
 
-          <div className="grid grid-cols-6 gap-gutter">
-            {shown.map((ep, i) => {
-              // Main line is the episode's title; the ordinal drops to a sub
-              // line unless the title already is the ordinal.
-              const ordinal = `第${ep.index}集`
-              const title = episodeTitle(ep)
-              return (
-                <EpCell
-                  key={ep.index}
-                  row={epRow0 + Math.floor(i / EP_COLS)}
-                  col={i % EP_COLS}
-                  title={title}
-                  subtitle={title === ordinal ? null : ordinal}
-                  isResume={ep.index === resumeIndex}
-                  vip={!!ep.vip}
-                  onSelect={() => playEpisode(ep.index)}
-                />
-              )
-            })}
-          </div>
+          {!single && (
+            <div className="grid grid-cols-6 gap-gutter">
+              {shown.map((ep, i) => {
+                // Main line is the episode's title; the ordinal drops to a sub
+                // line unless the title already is the ordinal.
+                const ordinal = `第${ep.index}集`
+                const title = episodeTitle(ep)
+                return (
+                  <EpCell
+                    key={ep.index}
+                    row={epRow0 + Math.floor(i / EP_COLS)}
+                    col={i % EP_COLS}
+                    title={title}
+                    subtitle={title === ordinal ? null : ordinal}
+                    isResume={ep.index === resumeIndex}
+                    vip={!!ep.vip}
+                    onSelect={() => playEpisode(ep.index)}
+                  />
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
