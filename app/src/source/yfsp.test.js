@@ -111,6 +111,9 @@ test('categoryList maps the filter onto list/Search params', async (t) => {
   const page = await categoryList({ cid: '0,1,4', filter: { genre: '0,1,4,132', area: '大陆', lang: '0', year: '0', status: '1', sort: '3' }, page: 2 })
   assert.deepEqual([page.total, page.page, page.maxPage], [4146, 2, 30])
   assert.match(urls[0], /Search\?cinema=1&page=2&size=36&orderby=3&desc=1&cid=0,1,4,132&region=%E5%A4%A7%E9%99%86&isserial=1&isIndex=-1&isfree=-1&isVertical=-1&v=1&vv=/)
+  // 全集 / 横屏 are 0, a real value rather than "All".
+  await categoryList({ cid: '0,1,8', filter: { status: '0', form: '0' } })
+  assert.match(urls[1], /cid=0,1,8&isserial=0&isIndex=-1&isfree=-1&isVertical=0&/)
 })
 
 test('searchList signs the form body and keeps the keyword in the URL', async (t) => {

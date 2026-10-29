@@ -114,7 +114,8 @@ export async function resolveStream(id, episode) {
 // lists
 // ---------------------------------------------------------------------------
 
-// '0' is "All" in every filter dimension; the gateway wants -1 or nothing.
+// '0' is "All" for genre/area/lang/year; the gateway wants the param left out.
+// status and form already carry the gateway's own values (-1 = all).
 const pick = (v) => (v && v !== '0' ? v : undefined)
 
 /**
@@ -126,7 +127,7 @@ export async function categoryList({ cid, filter = {}, page = 1, size = 36 }) {
   const [d] = await apiGet(HOST.m10, '/api/list/Search', {
     cinema: 1, page, size, orderby: filter.sort || 1, desc: 1, cid: pick(filter.genre) || cid,
     region: pick(filter.area), language: pick(filter.lang), year: pick(filter.year),
-    isserial: pick(filter.status) || -1, isIndex: -1, isfree: -1, isVertical: pick(filter.form) || -1,
+    isserial: filter.status ?? -1, isIndex: -1, isfree: -1, isVertical: filter.form ?? -1,
   })
   return {
     items: (d?.result || []).map(summary),
