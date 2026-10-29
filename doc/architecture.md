@@ -112,7 +112,7 @@ app/src/source/
 | `searchList({keyword, page, size})` | `POST rankv21/v3/list/briefsearch` | `Page<Summary>`，只要影视结果 |
 | `detail(id)` | `m10/v3/video/detail` + `m10/v3/video/languagesplaylist?taxis=1` | `Detail` |
 | `resolveStream(id, episode)` | `m10/v3/video/play` | `Stream`，不可播时抛 `ApiError` |
-| `imageUrl(pic, w, h)` | 无，拼 `static.yfsp.tv` 缩放参数 | 完整图片 URL |
+| `imageUrl(pic, size)` | 无，拼 `static.yfsp.tv` 缩放参数；`size` 是 `Thumb` 传的 `'384x560'` 这种字符串 | 完整图片 URL |
 
 olevod 有、这里没有的：`searchSuggest`（站点没有联想接口，见决策 D5）、`captcha` / `login` / `userInfo`（不做账号）。
 
@@ -374,7 +374,7 @@ sequenceDiagram
 - Q5：分片 `verify` 的确切有效期，决定长时间暂停后的恢复体验。
 - Q6：多大的请求量会触发 code 5。
 - Q7：`briefsearch` 是否支持拼音首字母，`orderby` 各值的含义。
-- Q8：VIP 集未登录时 `play` 的实际返回（`isPreView` 试看、`needLogin`），决定提示文案。
+- Q8：VIP 集未登录时 `play` 的实际返回（`isPreView` 试看、`needLogin`），决定提示文案。M1-5（2026-10-29）在电视剧、电影、动漫按更新时间各扫了 12 部，选集里没有一集是 `isVip`，站点的 VIP 主要体现在清晰度档位上。适配器目前在没有可播档位时，按 `isVip` 抛「该集需要 VIP 会员」，否则抛「暂时无法播放」；遇到真实的 VIP 集再核对。
 - Q9：卡片红色「新」/ 更新数角标的数据来源。站点读 `todayNum`，抽查的列表和首页返回里没有这个字段。查不到就一直不做。
 - Q10：`languagesplaylist` 的 `lsk` 含义，有没有 `info` 多于一项的片。第一版只取 `info[0]`。
 

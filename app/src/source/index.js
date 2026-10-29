@@ -1,8 +1,5 @@
 /*
- * Data-source adapter entry — pages and components import only from here.
- * Stub until M1-5: the real yfsp adapter replaces these exports.
+ * Data-source adapter entry — pages, components and feeds.js import only from
+ * here. One source, so no registry: it just re-exports the yfsp adapter.
  */
-
-export function imageUrl(pic) {
-  return pic || ''
-}
+export * from './yfsp.js'
