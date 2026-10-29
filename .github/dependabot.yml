@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    assignees:
+      - "shichen35"
