@@ -1,6 +1,6 @@
 /*
  * Poster card: 2:3 thumbnail + title + a small meta row, with optional badges
- * (rating, UHD, "Watched through EPxx") and a bottom watch-progress bar.
+ * (rating, 4K, "Watched through EPxx") and a bottom watch-progress bar.
  *
  * Wrapped in React.memo so a parent re-render doesn't re-render a whole grid of
  * cards. Focus state is the border + title-color swap only — no scale, no
@@ -26,7 +26,6 @@ const GRID_CARD = 'cv-auto [contain-intrinsic-size:auto_var(--spacing-card)_auto
 function VideoCardImpl({ item, layer, group, row, col, onSelect, watchedEp, progress, timeLabel, marker, markerIcon, className = GRID_CARD }) {
   const { props } = useFocusable({ layer, group, row, col, onSelect })
 
-  const uhd = /4k|uhd|蓝光/i.test(item.remarks || '')
   const pct =
     progress && progress.duration > 0
       ? Math.min(100, Math.max(0, (progress.position / progress.duration) * 100))
@@ -38,13 +37,13 @@ function VideoCardImpl({ item, layer, group, row, col, onSelect, watchedEp, prog
           (transparent) so focusing never shifts layout, and the radius is the
           image radius (12px) + the 3px ring so the outer edge stays rounded. */}
       <div className="relative aspect-2/3 w-full overflow-hidden rounded-[15px] border-3 border-transparent bg-elev focused:border-focus">
-        <Thumb pic={item.pic} picThumb={item.picThumb} alt={item.name} />
+        <Thumb pic={item.pic} alt={item.name} />
         {/* One decimal everywhere (9 → 9.0) so a row of badges reads evenly; cards
             already carrying watch progress drop it to keep the poster calm. */}
         {item.score > 0 && watchedEp == null && (
-          <span className={`${BADGE} top-2 left-2 bg-elev font-semibold text-accent`}>{Number(item.score).toFixed(1)}</span>
+          <span className={`${BADGE} top-2 left-2 bg-elev font-semibold text-rating`}>{Number(item.score).toFixed(1)}</span>
         )}
-        {/* A marker (history's 管理 mode) takes the UHD corner: what OK does
+        {/* A marker (history's 管理 mode) takes the 4K corner: what OK does
             right now matters more than the source's tier. */}
         {marker ? (
           <span className={`${BADGE} top-2 right-2 bg-uhd font-semibold text-inverse`}>
@@ -57,7 +56,7 @@ function VideoCardImpl({ item, layer, group, row, col, onSelect, watchedEp, prog
             )}
           </span>
         ) : (
-          uhd && <span className={`${BADGE} top-2 right-2 bg-uhd font-semibold text-inverse`}>UHD</span>
+          item.uhd && <span className={`${BADGE} top-2 right-2 bg-uhd font-semibold text-inverse`}>4K</span>
         )}
         {watchedEp != null && <span className={`${BADGE} bottom-3.5 left-2 bg-elev-2 text-fg`}>看到第{watchedEp}集</span>}
         {pct > 0 && (

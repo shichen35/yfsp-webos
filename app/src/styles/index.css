@@ -54,8 +54,9 @@
   --color-fg-3: #82828a;    /* tertiary / disabled; ~5:1 on bg, 4.45:1 on elev, so 22px meta stays legible */
 
   /* Accents (used sparingly, never as a background wash) */
-  --color-accent: #00c0ff;  /* progress bars / ratings / selection indicator */
-  --color-uhd: #ffcf6b;     /* "UHD" badge / destructive dialog action */
+  --color-accent: #00c0ff;  /* progress bars / selection indicator */
+  --color-rating: #ffa800;  /* rating badge (the site's rating orange) */
+  --color-uhd: #ffcf6b;     /* "4K" badge / destructive dialog action */
 
   /* Focus */
   --color-focus: #00c0ff;   /* focus border / fill (site accent) */
